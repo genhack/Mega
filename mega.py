@@ -1,20 +1,20 @@
 import sys
-import logging
-from cli import CLI
+from cli import Cli
 from excel_handler import ExcelHandler
 from payload_handler import PayloadHandler
+from utils import CustomLogger
 
-# Configurazione del logger
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s - %(levelname)s - %(message)s')
+logger = CustomLogger(__name__)
 
 class Mega:
     def __init__(self):
-        self.excel_handler = ExcelHandler()
-        self.payload_handler = PayloadHandler(password="")
+        # Passa il logger alle classi che lo richiedono
+        self.excel_handler = ExcelHandler(logger)
+        self.payload_handler = PayloadHandler(logger, password="")  # Assicurati di passare il logger come primo parametro
 
     def run(self):
-        cli = CLI(self.excel_handler, self.payload_handler)
+        # Passa il logger anche al CLI, insieme agli handler
+        cli = Cli(logger, self.excel_handler, self.payload_handler)
         cli.start()
 
 if __name__ == '__main__':
@@ -22,5 +22,5 @@ if __name__ == '__main__':
         program = Mega()
         program.run()
     except Exception as e:
-        logging.error(f"Errore nel programma: {e}")
+        logger.error(f"Errore nel programma: {e}")
         sys.exit(1)

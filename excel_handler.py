@@ -23,43 +23,46 @@ class ExcelHandler:
         self.wb_template = None
 
     def load_source(self) -> None:
+
         """
         Carica il file sorgente in formato .xlsx utilizzando xlwings.
         """
-        if self.filename:
-            if not self.filename.lower().endswith(self.extension_xlsx):
-                self.logging.error(f"Il file {self.filename} non è un file {self.extension_xlsx}. Inserisci un file valido.")
-                return
-            try:
-                self.wb_source = xw.Book(self.filename)
-                self.logging.info(f"File sorgente {self.filename} caricato con successo.")
-            except Exception as e:
-                self.logging.error(f"Errore durante il caricamento del file sorgente: {e}")
-        else:
-            self.logging.error("Nessun file sorgente specificato.")
+        if not self.filename:
+            raise ValueError("Nessun file sorgente specificato.")
+        if not self.filename.lower().endswith(self.extension_xlsx):
+            raise ValueError(f"Il file '{self.filename}' non ha l'estensione {self.extension_xlsx}.")
+        if not os.path.exists(self.filename):
+            raise FileNotFoundError(f"Il file sorgente '{self.filename}' non esiste.")
+
+        try:
+            self.wb_source = xw.Book(self.filename)
+            self.logging.info(f"File sorgente {self.filename} caricato con successo.")
+        except Exception as e:
+            raise RuntimeError(f"Errore durante il caricamento del file sorgente: {e}")
 
     def load_template(self) -> None:
         """
         Carica il file template in formato .xlsm.
         """
-        if self.template:
-            if not self.template.lower().endswith(self.extension_xlsm):
-                self.logging.error(
-                    f"Il file {self.template} non è un file {self.extension_xlsm}. Inserisci un file template valido.")
-                return
-            try:
-                self.wb_template = xw.Book(self.template)
-                self.logging.info(f"Template {self.template} caricato con successo.")
-            except Exception as e:
-                self.logging.error(f"Errore durante il caricamento del template: {e}")
-        else:
-            self.logging.error("Nessun file template specificato.")
+        if not self.template:
+            raise ValueError("Nessun file template specificato.")
+        if not self.template.lower().endswith(self.extension_xlsm):
+            raise ValueError(f"Il file '{self.template}' non ha l'estensione {self.extension_xlsm}.")
+        if not os.path.exists(self.template):
+            raise FileNotFoundError(f"Il file template '{self.template}' non esiste.")
+
+        try:
+            self.wb_template = xw.Book(self.template)
+            self.logging.info(f"Template {self.template} caricato con successo.")
+        except Exception as e:
+            raise RuntimeError(f"Errore durante il caricamento del template: {e}")
 
     def copy_content(self) -> None:
         """
         Copia in maniera 1:1 il contenuto del file sorgente nel template.
         Utilizza le funzionalità native di copy-paste di Excel per preservare valori, formattazione,
         celle unite e altre proprietà.
+        TODO: DA MIGLIORARE
         """
         if not self.wb_source or not self.wb_template:
             self.logging.error("Assicurarsi che il file sorgente e il template siano caricati.")

@@ -1,9 +1,5 @@
-import time
 import xlwings as xw
 import os
-
-from lxml.doctestcompare import OutputChecker
-
 from utils import CustomLogger
 
 

@@ -1,4 +1,7 @@
 import base64 as b64
+import textwrap
+
+from animation import console
 from utils import CustomLogger
 from pymetasploit3.msfrpc import MsfRpcClient
 
@@ -62,14 +65,13 @@ class PayloadHandler:
 
             if isinstance(generated_payload, str):
                 self.logging.error(f"Errore nella generazione del payload: {generated_payload}")
-                return None
-
 
             # Codifica il payload in Base64
             payload_b64 = b64.b64encode(generated_payload).decode('utf-8')
-            self.logging.info("Payload generato e codificato in Base64.")
+            wrapped_payload = "\n".join(textwrap.wrap(payload_b64, width=60))
+            self.logging.info("Payload generato e codificato in Base64:")
+            console.print(wrapped_payload, style="blue", markup=False, highlight=False)
             return payload_b64
 
         except Exception as e:
             self.logging.error(f"Errore nella generazione del payload: {e}")
-            return None

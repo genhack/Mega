@@ -1,7 +1,5 @@
 import base64 as b64
-import textwrap
 
-from animation import console
 from utils import CustomLogger
 from pymetasploit3.msfrpc import MsfRpcClient
 
